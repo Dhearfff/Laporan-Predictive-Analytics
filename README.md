@@ -54,8 +54,15 @@ XGBoost dipilih sebagai model boosting yang terkenal efektif dalam meningkatkan 
 ## Data Understanding
 Dataset yang digunakan dalam proyek ini adalah Breast Cancer Wisconsin (Diagnostic) Dataset yang diperoleh dari platform Kaggle [https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data]. Dataset ini berisi data numerik mengenai karakteristik tumor payudara dengan tujuan klasifikasi jenis tumor menjadi ganas atau jinak.
 
-### Variabel-variabel pada reast Cancer Wisconsin (Diagnostic) Dataset adalah sebagai berikut:
+Dataset yang digunakan dalam analisis ini terdiri dari 569 baris data yang merepresentasikan sampel pasien, serta 32 kolom fitur yang meliputi variabel karakteristik tumor dan variabel target diagnosis. Jumlah data yang memadai ini diharapkan mampu memberikan representasi yang cukup untuk pelatihan dan evaluasi model klasifikasi kanker payudara secara akurat.
 
+Pada tahap awal, dilakukan pemeriksaan terhadap kualitas dataset yang mencakup aspek kelengkapan data (missing values), keberadaan data duplikat dan hasil pemeriksaan menunjukkan bahwa sebagian besar kolom dalam dataset tidak mengandung nilai yang hilang (missing values), dengan pengecualian pada kolom Unnamed: 32 yang secara keseluruhan berisi 569 nilai kosong. Kolom ini teridentifikasi sebagai kolom kosong atau artefak dari proses konversi data, sehingga tidak memiliki kontribusi informatif terhadap analisis dan dapat dihapus dari dataset. Adapun seluruh kolom utama seperti radius_mean, texture_mean, area_worst, dan variabel target diagnosis_label tidak memiliki nilai yang hilang, yang menandakan bahwa dataset dalam kondisi bersih dari missing values yang berpotensi mengganggu proses pelatihan model.
+
+### Variabel-variabel pada reast Cancer Wisconsin (Diagnostic) Dataset adalah sebagai berikut:
+#### Fitur yang tidak digunakan
+- id: Identifikasi numerik unik untuk setiap pasien atau sampel pengamatan. Kolom ini tidak mengandung informasi prediktif terhadap diagnosis kanker, sehingga tidak digunakan dalam proses pemodelan dan analisis statistik. Selain itu, keberadaan id dapat menyebabkan bias atau overfitting bila disertakan dalam model, karena nilainya bersifat arbitrer dan tidak merepresentasikan karakteristik tumor.
+
+#### Fitur Yang digunakan
 - diagnosis: Target variabel yang menunjukkan jenis tumor (0 = jinak, 1 = ganas).
 - radius_mean: Rata-rata jarak dari pusat ke tepi tumor.
 - texture_mean: Rata-rata variasi intensitas abu-abu pada gambar tumor.
@@ -89,6 +96,11 @@ Dataset yang digunakan dalam proyek ini adalah Breast Cancer Wisconsin (Diagnost
 - fractal_dimension_worst: Nilai maksimum fractal dimension tumor.
 - diagnosis_label: Label asli diagnosis berupa string ('B' untuk jinak, 'M' untuk ganas).
 
+#### Fitur yang dihapus
+- unnamed: Kolom kosong yang berisi nilai missing seluruhnya sehingga tidak relevan dan dihapus dari dataset.
+
+
+
 ### Exploratory Data Analysis (EDA)
 1. Distribusi Kelas Diagnosis
 Distribusi kelas target (diagnosis) diamati untuk memastikan bahwa dataset tidak terlalu tidak seimbang (imbalanced). Berikut visualisasi distribusi kelas menggunakan grafik batang (countplot):
@@ -100,7 +112,8 @@ plt.xlabel('Diagnosis')
 plt.ylabel('Jumlah')
 plt.show()
 ```
-![Distribusi Kelas Diagnosis](https://i.postimg.cc/wTMGZ6qR/Visual1.png)
+![Visual1](https://github.com/user-attachments/assets/b9167c5f-e422-4986-b095-c9b7cf7c7465)
+
 
 Hasil dari visualisiasi itu akan menunjukkan bahwa data terdiri dari dua kelas yaitu Jinak(B) dan Ganas(M), dimana jumlah data pada B adalah 357 dan pada M adalah 212.
 
@@ -117,11 +130,11 @@ for feature in features_to_plot:
     plt.ylabel('Frekuensi')
     plt.show()
 ```
-![Distribusi Radius Mean](https://i.postimg.cc/T3cL1Nfp/visual2.png)
-![DTM](https://i.postimg.cc/wBhW1p3D/DTM.png)
-![DPM](https://i.postimg.cc/wMBF4R2k/DPM.png)
-![DAM](https://i.postimg.cc/tCY2hPYq/DAM.pngg)
-![DSM](https://i.postimg.cc/KYyfSHQj/DSM.png)
+![visual2](https://github.com/user-attachments/assets/e2c9ba80-eed6-4978-ad0b-651ac29c6feb)
+![DTM](https://github.com/user-attachments/assets/eeac3c97-abe0-4059-b21c-efc0519550a2)
+![DPM](https://github.com/user-attachments/assets/c575cdbd-f23d-4e77-8bce-fcb720708b9e)
+![DSM](https://github.com/user-attachments/assets/7d60dd1a-f0ac-4f47-a632-f1cb07e6797a)
+![DSM](https://github.com/user-attachments/assets/0d506a30-d789-46f3-a3d2-444dbcd95316)
 
 Visualisiasi ini adalah untuk mengidentifikasi apakah fitur memiliki distribusi normal, skewed, atau memiliki nilai ekstrim.
 
@@ -135,7 +148,7 @@ sns.heatmap(numeric_df.corr(), cmap='coolwarm', annot=False)
 plt.title('Heatmap Korelasi Fitur')
 plt.show()
 ```
-![HEATMAP KORELASI](https://i.postimg.cc/0QV0S2vK/HEATMAP-KORELASI.png)
+![HEATMAP KORELASI](https://github.com/user-attachments/assets/e042549b-a4c3-4ba2-a7e8-b2db49bfd44d)
 
 Hasil visualisasi menunjukkan adanya fitur-fitur yang memiliki korelasi tinggi satu sama lain, seperti antara radius_mean, perimeter_mean, dan area_mean, yang mengindikasikan adanya hubungan linier kuat. I
 
@@ -158,37 +171,56 @@ Hasil dari visualisasi tersebut terlihat perbedaan distribusi yang signifikan pa
 
 ## Data Preparation
 
-1. Penghapusan Kolom Kosong
+1. Pemeriksaan Missing Values
+```
+print("Missing values per kolom:\n", df.isnull().sum())
+```
+Bertujuan untuk  mengecek apakah ada data yang hilang (missing values) di setiap kolom dataset. Dari hasilnya, terlihat bahwa semua kolom memiliki data lengkap kecuali kolom Unnamed: 32 yang seluruhnya kosong, sehingga kolom tersebut tidak berguna dan perlu dihapus.
+
+
+ 3. Pemeriksaan Duplikasi Data
+```
+duplikat = df[df.duplicated()]
+print("Duplikasi baris (seluruh kolom):")
+print(duplikat)
+```
+Bertujuan memeriksa apakah ada baris data yang duplikat, yaitu baris yang memiliki nilai persis sama di semua kolom. Hasilnya menunjukkan bahwa tidak ditemukan baris duplikat dalam dataset, sehingga setiap data dianggap unik dan tidak terjadi pengulangan data yang dapat memengaruhi analisis.
+
+ 4. Drop Kolom ID
+```
+df.drop(['id'], axis=1, inplace=True)
+Encoding Target Diagnosis
+```
+Menghapus kolom id dari dataset secara permanen (inplace=True). Kolom id biasanya berisi nilai unik sebagai identitas data dan tidak memiliki nilai prediktif, sehingga dihapus agar tidak mempengaruhi proses analisis atau pemodelan.
+
+5. Encoding Data Diagnosis
+```
+df['diagnosis'] = df['diagnosis'].map({'M': 1, 'B': 0})
+```
+Variabel target diagnosis yang awalnya berupa label kategorikal dengan nilai 'M' (Malignant/ganas) dan 'B' (Benign/jinak) diubah menjadi representasi numerik untuk memudahkan proses pemodelan klasifikasi. Proses encoding dilakukan dengan memetakan label 'M' menjadi nilai 1 dan label 'B' menjadi nilai 0 menggunakan fungsi .map() pada Pandas,
+
+6. Penghapusan Kolom Kosong
 ```
 if 'Unnamed: 32' in df.columns:
     df.drop(['Unnamed: 32'], axis=1, inplace=True)
 ```
 Kolom Unnamed: 32 hanya berisi nilai kosong (NaN) dan tidak memiliki informasi penting. Oleh karena itu, kolom ini dihapus agar tidak memengaruhi proses pelatihan model.
 
-2. Pemisahan Fitur dan Target
+7. Pemisahan Fitur dan Target
 ```
 X = df.drop(['diagnosis', 'diagnosis_label'], axis=1)
 y = df['diagnosis']
 ```
 Data dipisahkan menjadi variabel fitur X dan variabel target y. Variabel diagnosis digunakan sebagai target karena merupakan label klasifikasi (ganas/jinak), sedangkan diagnosis_label tidak diperlukan karena merupakan bentuk string dari diagnosis.
 
-
-
-3. Pemeriksaan Missing Values
-```
-print("\nMissing values di fitur:", X.isnull().sum().sum())
-print("Missing values di target:", y.isnull().sum())
-```
- Bertujuan untuk memastikan tidak ada nilai kosong yang tersisa di dalam fitur maupun target. Hasilnya menunjukkan semua data valid.
- 
- 4. Split Data: Train dan Test
+ 8. Split Data: Train dan Test
  ```
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y)
 ```
 Data dibagi menjadi 80% data latih dan 20% data uji. Penggunaan stratify=y bertujuan untuk menjaga proporsi label (ganas/jinak) tetap seimbang pada kedua subset.
 
-5. Standarisasi Data
+9. Standarisasi Data
 ```
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
@@ -196,7 +228,7 @@ X_test_scaled = scaler.transform(X_test)
 ```
 Standarisasi dilakukan agar setiap fitur memiliki distribusi dengan rata-rata 0 dan standar deviasi 1. Karena fitur dalam skala besar (seperti area_mean) bisa mendominasi model jika tidak dinormalisasi.
 
-6. Reduksi Dimensi dengan PCA
+10. Reduksi Dimensi dengan PCA
 ```
 pca = PCA(n_components=0.95, random_state=42)
 X_train_pca = pca.fit_transform(X_train_scaled)
@@ -208,6 +240,8 @@ PCA (Principal Component Analysis) digunakan untuk mengurangi jumlah fitur, namu
 Pada tahap modelling ini dilakukan pendekatan klasifikasi untuk memprediksi jenis tumor (jinak atau ganas) berdasarkan data karakteristik numerik tumor payudara/Breast Cancer. Digunakan dua algoritma machine learning yaitu **Random Forest Classifier** dan **XGBoost Classifier**.
 
 1. **Random Forest Classifier**
+Random Forest Classifier bekerja dengan membangun banyak pohon keputusan (decision trees) secara acak dari subset data dan fitur yang berbeda (disebut bootstrap sampling dan feature bagging). Setiap pohon memberikan prediksi, kemudian hasil akhir ditentukan berdasarkan voting mayoritas dari semua pohon. Pendekatan ini mengurangi risiko overfitting yang biasa terjadi pada pohon tunggal dan meningkatkan kestabilan serta akurasi prediksi.
+
 - Model dilatih menggunakan data hasil PCA
 - Model default dari RandomForestClassifier() digunakan tanpa tuning hyperparameter.
 ```
@@ -229,6 +263,7 @@ y_pred_rf = rf_model.predict(X_test_pca)
   Bisa overfitting jika tidak dikontrol dengan pruning atau max depth.
 
 2. **XGBoost Classifier**
+XGBoost Classifier bekerja menggunakan prinsip boosting, yaitu membangun model secara bertahap dimana setiap model baru fokus pada memperbaiki kesalahan model sebelumnya dengan mengoptimasi fungsi loss. Model ini juga menerapkan regularisasi untuk mengurangi overfitting dan menggunakan teknik komputasi paralel agar efisien. Hasil prediksi akhir adalah kombinasi dari semua model bertingkat tersebut yang menghasilkan performa prediksi yang kuat dan generalisasi yang baik.
 - Model dilatih dengan data PCA menggunakan XGBClassifier.
 - Parameter disesuaikan minimal agar tidak ada error label encoder dan untuk menetapkan evaluas
 ```
@@ -260,13 +295,18 @@ Oleh karena itu, model ***XGBoost*** dipilih sebagai solusi akhir dalam proyek k
 ### Metrik Evaluasi yang Digunakan
 Model dievaluasi menggunakan empat metrik utama klasifikasi, yaitu akurasi, precision, recall, dan F1-score. Pemilihan metrik ini didasarkan pada kebutuhan untuk tidak hanya memperoleh prediksi yang benar secara keseluruhan, tetapi juga untuk meminimalkan kesalahan pada klasifikasi tumor ganas, yang berisiko tinggi.
 1. Akurasi: Mengukur seberapa banyak prediksi model yang benar secara keseluruhan.
-![Akurasi Rumus](https://i.postimg.cc/zDpg3gs6/accurasy.png)
+![accurasy](https://github.com/user-attachments/assets/270c0e97-8aa7-4be6-8c4f-c9ab0d1fb691)
 2. Precision: Mengukur berapa banyak prediksi positif yang benar-benar positif.
-![Precision Rumus](https://i.postimg.cc/mrxcKN9z/precision.png)
+![precision](https://github.com/user-attachments/assets/a8d6fab6-c2f0-4b47-bbb4-9e285b02b18c)
 3. Recall (Sensitivity): Mengukur seberapa banyak kasus positif (ganas) berhasil dikenali oleh model.
-![Recall Rumus](https://i.postimg.cc/T1H10rGP/recall.png)
+![recall](https://github.com/user-attachments/assets/08b01fa0-9692-4e0f-91a8-aad40e04730a)
+
 4. F1-score: Merupakan harmonic mean dari precision dan recall.
-![Recall Rumus](https://i.postimg.cc/x8JgSJJy/F1-SCORE.avif)
+
+   ![image](https://github.com/user-attachments/assets/1322688a-ddfa-49ae-bd47-df7a24518d77)
+
+
+
 
 ### Hasil Evaluasi Model
 
@@ -278,7 +318,12 @@ Model dievaluasi menggunakan empat metrik utama klasifikasi, yaitu akurasi, prec
 | F1-score  | 91.57%         | 96.39%  |
 
 
+### Dampak Model
+Model yang dikembangkan telah berhasil menjawab problem statement utama, yaitu mempercepat dan meningkatkan ketepatan diagnosis tumor payudara dibandingkan metode konvensional yang bergantung pada keahlian tenaga medis dan proses yang lama. Dengan menggunakan algoritma Random Forest dan XGBoost, model ini mampu membedakan secara akurat antara tumor jinak dan ganas berdasarkan karakteristik numerik tumor, sehingga mengurangi risiko keterlambatan diagnosis.
 
+Goals yang diharapkan juga tercapai, yaitu terciptanya sistem klasifikasi yang cepat, akurat, dan mudah digunakan, yang dapat membantu tenaga medis dalam pengambilan keputusan klinis. Model ini memberikan performa yang baik dengan metrik evaluasi yang memadai, khususnya dalam mengenali kasus tumor ganas secara tepat.
+
+Solusi yang diterapkan, termasuk penggunaan dua algoritma berbeda serta teknik reduksi dimensi PCA, terbukti berdampak positif dalam meningkatkan akurasi dan efisiensi pemodelan. Dengan demikian, seluruh solusi statement yang direncanakan memberikan kontribusi nyata terhadap pencapaian tujuan bisnis dan permasalahan yang diangkat, sehingga model ini dapat menjadi alat bantu diagnosis yang efektif dalam praktik klinis.
 
 
 
